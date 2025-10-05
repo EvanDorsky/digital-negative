@@ -2,6 +2,7 @@ build
 
 *.dng
 *.jpeg
+*.tiff
 
 CMakeUserPresets.json
 CMakeFiles

@@ -1,5 +1,6 @@
 [requires]
 libraw/0.21.2
+stb/cci.20240531
 
 [generators]
 CMakeDeps

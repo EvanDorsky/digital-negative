@@ -9,3 +9,6 @@ release:
   -DCMAKE_PREFIX_PATH="$(shell pwd)/build/Release/generators" \
   -DCMAKE_BUILD_TYPE=Release
 	cd build && make
+
+deploy:
+	cp build/rawproc .
