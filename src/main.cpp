@@ -19,6 +19,11 @@ int main() {
     const int ih = p.imgdata.sizes.iheight;
     if (!p.imgdata.image) return 4;
 
+    p.imgdata.params.output_tiff = 1;
+    p.dcraw_ppm_tiff_writer("before.tiff");
+
+    // conversion
+
     cv::Mat rgba16(ih, iw, CV_16UC4, (void*)p.imgdata.image);
     cv::Mat rgb16;
     rgb16.create(ih, iw, CV_16UC3);
@@ -30,11 +35,6 @@ int main() {
     // convert to BGR for OpenCV writer
     cv::Mat bgr16;
     cv::cvtColor(rgb16, bgr16, cv::COLOR_RGB2BGR);
-
-    // write
-    // cv::imwrite("test_opencv.tiff", bgr16);
-    p.imgdata.params.output_tiff = 1;
-    p.dcraw_ppm_tiff_writer("before.tiff");
 
     // --- OpenCV processing (example: 3x3 sharpening kernel on 16-bit data) ---
     cv::Mat kernel = (cv::Mat_<float>(3,3) <<
