@@ -1,6 +1,7 @@
 // main.cpp — LibRaw decode, OpenCV process (16-bit), write TIFF before/after
 #include <libraw/libraw.h>
 #include <opencv2/opencv.hpp>
+#include <cstdio>
 
 int main() {
     LibRaw p;
@@ -32,19 +33,77 @@ int main() {
     int from_to[] = {0,0, 1,1, 2,2};
     cv::mixChannels(&rgba16, 1, &rgb16, 1, from_to, 3);
 
-    // convert to BGR for OpenCV writer
-    cv::Mat bgr16;
-    cv::cvtColor(rgb16, bgr16, cv::COLOR_RGB2BGR);
+    std::cout << "created rgb16\n";
 
-    // --- OpenCV processing (example: 3x3 sharpening kernel on 16-bit data) ---
-    cv::Mat kernel = (cv::Mat_<float>(3,3) <<
-         1,  1,  1,
-         1,  1,  1,
-         1,  1,  1);
-    kernel /= cv::sum(kernel)[0];
+    // img16: 16-bit RGB from LibRaw (CV_16UC3)
+    cv::Mat img_f, blurred, bloom, result;
 
-    // cv::Mat rgb16_after;
-    cv::filter2D(rgba16, rgba16, -1, kernel, cv::Point(-1,-1), 0, cv::BORDER_REPLICATE);
+    // Convert to float for scaling
+    rgb16.convertTo(img_f, CV_32F, 1.0/65535.0);
+
+    std::cout << "converted to img_f\n";
+
+    // Generate blurred version
+    cv::GaussianBlur(img_f, blurred, cv::Size(0,0), 20.0); // sigma controls bloom radius
+    
+    std::cout << "make blurred\n";
+
+    // Compute intensity mask
+    cv::Mat gray;
+    cv::cvtColor(img_f, gray, cv::COLOR_RGB2GRAY);
+
+    std::cout << "make gray\n";
+
+    // Strength proportional to brightness
+    cv::Mat mask;
+    cv::normalize(gray, mask, 0, 1, cv::NORM_MINMAX);
+    cv::pow(mask, 2.0, mask); // emphasize highlights
+
+    std::cout << "do brightness\n";
+
+    // Combine original + bloom
+    // bloom = img_f + blurred.mul(mask * 0.6f);
+    // bloom = img_f;
+
+    CV_Assert(img_f.size() == blurred.size());
+    CV_Assert(img_f.type() == blurred.type());
+    CV_Assert(mask.type() == CV_32FC1);
+
+    cv::Mat scaledMask;
+    cv::multiply(mask, cv::Scalar::all(0.8f), scaledMask); // elementwise scale
+
+    // Expand mask to 3 channels
+    cv::Mat mask3;
+    cv::merge(std::vector<cv::Mat>{scaledMask, scaledMask, scaledMask}, mask3);
+
+    // Multiply and add
+    cv::Mat halo = blurred.mul(mask3);
+    bloom = img_f + halo;
+
+    // cv::normalize(bloom, bloom, 0, 1, cv::NORM_MINMAX);
+
+    std::cout << "recombined and normalized\n";
+
+    cv::Mat tmp16;
+    bloom.convertTo(tmp16, CV_16U, 65535.0);
+    // write directly into LibRaw’s RGBA buffer
+    auto *dst = p.imgdata.image; // ushort[4] per pixel
+    std::vector<cv::Mat> ch;
+    cv::split(tmp16, ch);
+
+    for (int y = 0; y < ih; ++y) {
+        for (int x = 0; x < iw; ++x) {
+            int i = y * iw + x;
+            dst[i][0] = ch[0].at<uint16_t>(y, x);
+            dst[i][1] = ch[1].at<uint16_t>(y, x);
+            dst[i][2] = ch[2].at<uint16_t>(y, x);
+            dst[i][3] = 65535; // opaque alpha
+        }
+    }
+
+    // Back to 16-bit
+    // bloom.convertTo(result, CV_16U, 65535.0);
+    // cv::imwrite("halation.tiff", result);
 
     // Write processed 16-bit TIFF
     p.imgdata.params.output_tiff = 1;
