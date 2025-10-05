@@ -1,0 +1,7 @@
+build
+
+*.dng
+*.jpeg
+
+CMakeUserPresets.json
+CMakeFiles
