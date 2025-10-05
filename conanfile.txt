@@ -1,6 +1,18 @@
 [requires]
 libraw/0.21.2
 stb/cci.20240531
+opencv/4.10.0
+
+[options]
+opencv/*:with_ffmpeg=False
+opencv/*:with_openexr=False
+opencv/*:with_gtk=False
+opencv/*:with_quirc=False
+opencv/*:with_v4l=False
+opencv/*:with_tbb=False
+opencv/*:with_eigen=False
+opencv/*:dnn=False
+opencv/*:contrib=False
 
 [generators]
 CMakeDeps

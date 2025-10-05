@@ -6,3 +6,4 @@ build
 
 CMakeUserPresets.json
 CMakeFiles
+.DS_Store

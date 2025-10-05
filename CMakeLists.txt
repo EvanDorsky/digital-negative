@@ -3,7 +3,11 @@ project(rawprocess)
 
 find_package(libraw CONFIG REQUIRED)
 find_package(stb CONFIG REQUIRED)
+find_package(opencv CONFIG REQUIRED)
 
 add_executable(rawproc src/main.cpp)
-target_link_libraries(rawproc PRIVATE libraw::libraw)
-target_link_libraries(rawproc PRIVATE stb::stb)
+target_link_libraries(rawproc PRIVATE
+  libraw::libraw
+  stb::stb
+  opencv::opencv
+)
