@@ -10,5 +10,5 @@ release:
   -DCMAKE_BUILD_TYPE=Release
 	cd build && make
 
-deploy:
+deploy: release
 	cp build/rawproc .
